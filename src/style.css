@@ -36,3 +36,13 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid #a982b
 .cat-feed-target .cat{filter:drop-shadow(0 0 8px #f6c68b99)}
 .cat-eating .cat{animation:happy .42s ease-in-out 3}
 .nom-bubble{position:absolute;z-index:8;top:45px;right:4px;background:#fff7f1;color:#bb8a75;border:1px solid #f3d7c4;border-radius:12px;padding:4px 7px;font-size:10px;font-weight:700;pointer-events:none;animation:rise 1.6s ease-out}
+
+/* Compact, readable in-app updater dialog instead of the WebView native alert. */
+.update-panel{position:absolute;z-index:30;top:31px;left:9px;right:9px;min-height:170px;padding:13px 12px 12px;background:#fff9f5;border:1px solid #eacfe0;border-radius:17px;box-shadow:0 9px 30px #7f647b66;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:7px;color:#765f7e}
+.update-emoji{font-size:27px;line-height:1.2}
+.update-panel strong{font-size:14px}
+.update-panel p{font-size:11px;line-height:1.4;margin:0 2px 3px}
+.update-actions{display:flex;gap:8px;width:100%}
+.update-actions button{flex:1;border:0;border-radius:10px;padding:9px 4px;font-size:11px;font-weight:700;background:#f0e5ee;color:#806989}
+.update-actions button:last-child{background:#b995c3;color:white}
+.update-actions button:disabled{opacity:.6;cursor:wait}
