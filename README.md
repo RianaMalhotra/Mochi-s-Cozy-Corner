@@ -41,19 +41,36 @@ Mochi will launch when you sign in to Windows. Remove the shortcut to disable au
 
 The desktop app includes a Windows notification-area icon. Right-click it for **Show Mochi**, **Hide Mochi**, and **Quit Mochi**. Left-click to show the pet again. This is especially useful because Mochi does not have a taskbar button.
 
-## 🔐 Automatic updates — release setup required
+## 🔐 Signed automatic updates (maintainer setup)
 
-The public MSI is **not automatically updated** when code is pushed to GitHub. Tauri's secure updater requires a dedicated signing key pair, an update endpoint, and signed update bundles. Do not put the private key or its password in the repository.
+Mochi checks for signed updates on startup and **asks before downloading or installing**. This requires one-time release signing setup before it can work. The published v0.1.0 installer does not have an updater; install the first updater-enabled version manually once.
 
-To prepare a secure updater, follow the [Tauri 2 updater guide](https://v2.tauri.app/plugin/updater/):
+### 1. Generate the key pair locally
 
-1. Generate an updater signing key pair on your own machine with `npm run tauri signer generate -- -w ~/.tauri/mochi.key` (see the Tauri guide for Windows path and command details).
-2. Keep the **private key** and password secret. The public key can be included in app configuration.
-3. Configure `tauri-plugin-updater` with the public key and a GitHub Releases endpoint.
-4. Build signed update bundles and publish the updater artifacts alongside each new GitHub Release.
-5. Enable periodic update checking and install/restart handling in the application.
+From a trusted local terminal, run:
 
-**Status:** The system tray is implemented. Automatic update installation is **not yet enabled** until the maintainer sets up signing and release artifacts. Users must manually install new MSI releases in the meantime.
+```powershell
+npm install
+npm run tauri signer generate -- -w "$env:USERPROFILE\.tauri\mochi.key"
+```
+
+Keep the generated **private key** and password secret. Never commit them, paste them into an issue, or share them. Back them up securely. If the key is lost, existing installations cannot trust future updates signed with a replacement key.
+
+### 2. Configure the repository
+
+- Copy the generated **public key** (not private key) into `src-tauri/tauri.conf.json`, replacing `REPLACE_WITH_TAURI_UPDATER_PUBLIC_KEY`.
+- In GitHub repository **Settings → Secrets and variables → Actions**, create `TAURI_SIGNING_PRIVATE_KEY` containing the **private key file contents**, and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` containing the password.
+- Commit only the public key change to `main`. Never commit private key files or passwords.
+
+### 3. Publish a versioned update
+
+- Update `version` in `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, and `package.json` to the same new version, for example `0.2.0`.
+- Commit and push. Create and push a matching tag: `git tag v0.2.0` then `git push origin v0.2.0`.
+- The GitHub Actions **Release Mochi (signed Windows updater)** workflow builds the Windows MSI and signed updater files and creates a **draft release**.
+- Inspect the release and its `latest.json` and signed update assets, then **publish** the draft. Draft releases are not discoverable by the updater.
+- Manually install this first updater-enabled MSI once. Future published releases will be checked at startup and require the user's approval before installation.
+
+**Important:** A push to `main` alone does not publish an update. The installed application must have the correct public key, and each release must include valid signed updater artifacts. Windows may request installer elevation depending on installation context.
 
 ## 🛠️ Development (contributors)
 
