@@ -17,7 +17,7 @@ function load<T>(key: string, fallback: T): T {
 const formatted = (s: number) => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 const inTauri = () => '__TAURI_INTERNALS__' in window;
 
-function Cat({ mood, onPet, headphones }: { mood: Mood; onPet: () => void; headphones: boolean }) {
+function Cat({ mood, onPet, headphones, bow }: { mood: Mood; onPet: () => void; headphones: boolean; bow: boolean }) {
   return <button className={'cat cat-' + mood} aria-label="Pet Mochi" onClick={onPet} title="Pet Mochi!">
     <svg viewBox="0 0 260 225" role="img" aria-label="Animated cream cat with lavender headphones">
       <ellipse cx="132" cy="205" rx="93" ry="13" fill="#a88aaf" opacity=".22" />
@@ -42,6 +42,7 @@ function Cat({ mood, onPet, headphones }: { mood: Mood; onPet: () => void; headp
         <path d="M124 126q6-7 12 0l-6 5z" fill="#d993a1" />
         <path d="M130 131q-8 11-15 0m15 0q8 11 15 0" stroke="#9f7884" strokeWidth="2.5" fill="none" strokeLinecap="round" />
         <g stroke="#d9b8aa" strokeWidth="2" strokeLinecap="round"><path d="M75 133l-25-5m25 11l-23 5m133-11l25-5m-25 11l23 5" /></g>
+        {bow && <g className="bow-accessory"><path d="M158 53 Q130 28 136 59 Q125 84 158 65 Q190 88 184 55 Q187 31 158 53Z" fill="#ed9eb9" stroke="#c87f9e" strokeWidth="2"/><circle cx="158" cy="58" r="8" fill="#f7cad8"/><circle cx="158" cy="58" r="3" fill="#fff0f4"/></g>}
         {headphones && <g><path d="M74 68q56-48 112 0" stroke="#a88ba7" strokeWidth="10" fill="none" strokeLinecap="round" />
         <rect x="48" y="82" width="22" height="44" rx="11" fill="#b79bc4" />
         <rect x="190" y="82" width="22" height="44" rx="11" fill="#b79bc4" />
@@ -62,6 +63,9 @@ function App() {
   const [expanded, setExpanded] = useState(() => load('mochi-expanded', false));
   const [pinned, setPinned] = useState(true);
   const [petting, setPetting] = useState(false);
+  const [bow, setBow] = useState(() => load('mochi-bow', true));
+  const [petCount, setPetCount] = useState(() => load('mochi-pets', 0));
+  const [bubble, setBubble] = useState('');
   const [awake, setAwake] = useState(true);
   const [musicOverride, setMusicOverride] = useState(false);
   const [bluetoothHeadphones, setBluetoothHeadphones] = useState(false);
@@ -124,6 +128,14 @@ function App() {
     void dock();
   }, [expanded]);
 
+  useEffect(() => { save('mochi-bow', bow); save('mochi-pets', petCount); }, [bow, petCount]);
+
+  useEffect(() => {
+    if (!bubble) return;
+    const timeout = window.setTimeout(() => setBubble(''), 2600);
+    return () => clearTimeout(timeout);
+  }, [bubble]);
+
   useEffect(() => {
     save('mochi-mode', mode);
     save('mochi-remaining', remaining);
@@ -169,6 +181,9 @@ function App() {
     lastInteraction.current = Date.now();
     setAwake(true);
     setPetting(true);
+    setPetCount(n => n + 1);
+    const phrases = ['mrrp! ♡', 'you got this! ✨', 'purr purr~', 'one more hug? ♡', 'sending cozy vibes ☁️', 'tiny paws, big love!'];
+    setBubble(phrases[Math.floor(Math.random() * phrases.length)]);
     if (petTimeout.current !== null) clearTimeout(petTimeout.current);
     petTimeout.current = window.setTimeout(() => setPetting(false), 1300);
   };
@@ -230,9 +245,11 @@ function App() {
       <button onClick={() => setExpanded(v => !v)} title="Toggle timer" aria-label="Toggle timer"><Settings2 size={15} /></button>
       <button onClick={close} title="Close Mochi" aria-label="Close Mochi"><X size={16} /></button>
     </div>
+    <button className="bow-toggle" onClick={() => setBow(v => !v)} title={bow ? 'Take off bow' : 'Put on bow'} aria-label="Toggle Mochi's pink bow">🎀</button>
     <div className="stars" aria-hidden="true">✦ <span>·</span> ✧ <span>✦</span></div>
-    <div className="cat-wrap"><Cat mood={mood} onPet={pet} headphones={musicMode} /></div>
+    <div className="cat-wrap"><Cat mood={mood} onPet={pet} headphones={musicMode} bow={bow} />{bubble && <div className="speech-bubble" role="status">{bubble}</div>}</div>
     <div className="floor" aria-hidden="true" />
+    <div className="pet-counter" title="Total pets given to Mochi">♡ {petCount} pets</div>
     <div className="status">
       <span className="status-dot" /> {mood === 'sleep' ? 'sleeping… zzz' : mood === 'focus' ? 'studying with you ♡' : mood === 'happy' ? 'purr purr ♡' : 'here to keep you company'}
     </div>
