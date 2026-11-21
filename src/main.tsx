@@ -76,6 +76,33 @@ function App() {
 
   const mood: Mood = petting ? 'happy' : running && mode === 'focus' ? 'focus' : !awake ? 'sleep' : 'idle';
 
+  // Check signed GitHub releases on startup; never install without consent.
+  useEffect(() => {
+    if (!inTauri()) return;
+    let cancelled = false;
+    const checkUpdates = async () => {
+      try {
+        const { check } = await import('@tauri-apps/plugin-updater');
+        const update = await check();
+        if (!update) return;
+        if (cancelled) { await update.close(); return; }
+        const accepted = window.confirm(`Mochi ${update.version} is available! 🐱\\n\\nInstall the signed update and restart Mochi now?`);
+        if (accepted) {
+          setNotice('Downloading Mochi update…');
+          await update.downloadAndInstall();
+          const { relaunch } = await import('@tauri-apps/plugin-process');
+          await relaunch();
+        } else {
+          await update.close();
+        }
+      } catch (error) {
+        console.warn('Mochi update check failed', error);
+      }
+    };
+    void checkUpdates();
+    return () => { cancelled = true; };
+  }, []);
+
   // Poll connected Bluetooth audio devices; no audio playback or default-device requirement.
   useEffect(() => {
     if (!inTauri()) return;
