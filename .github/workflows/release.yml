@@ -56,7 +56,13 @@ jobs:
           $release = $releaseJson | ConvertFrom-Json
           if (-not $release.isDraft) { throw "Release $env:RELEASE_TAG is already published; refusing to overwrite assets." }
           foreach ($asset in $release.assets) {
-            if ($asset.name -match '\\.(msi|msi\\.sig|json)        uses: tauri-apps/tauri-action@v0
+            if ($asset.name.EndsWith('.msi') -or $asset.name.EndsWith('.msi.sig') -or $asset.name -eq 'latest.json') {
+              gh release delete-asset $env:RELEASE_TAG $asset.name --repo $env:GITHUB_REPOSITORY --yes
+              if ($LASTEXITCODE -ne 0) { throw "Failed to delete old asset $($asset.name)" }
+            }
+          }
+      - name: Build and publish signed Windows MSI update
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
