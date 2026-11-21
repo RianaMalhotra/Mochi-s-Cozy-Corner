@@ -1,50 +1,93 @@
 # Mochi's Cozy Corner 🐈
 
-A tiny animated **floating desktop cat for Windows**, made with **Tauri 2 + React + TypeScript + Rust**. Mochi naps with headphones on, purrs when petted, and keeps you company during study sessions.
+A tiny, animated **floating desktop cat for Windows**, built with **Tauri 2, React, TypeScript, and Rust**. Mochi keeps you company while you study, naps when you're away, and wears headphones when compatible Bluetooth headphones are connected.
 
-## Features
+## ✨ Features
 
-- Transparent, frameless 350 × 440 desktop window
-- Drag using the **mochi ♡** top bar
-- Animated cat: slow breathing, swishing tail, sleeping eyes, floating hearts when petted, and focus mode
-- Expandable Pomodoro: 25-minute focus and 5-minute break; start, pause, reset, completion count
-- Remembered timer state and session count using local storage
-- Clock, always-on-top toggle, close control, accessible button labels and reduced-motion support
+- Compact, transparent desktop companion that docks near the bottom-right corner
+- Pet Mochi to see hearts and a happy expression
+- Automatically falls asleep after 60 seconds of Windows inactivity
+- Automatically shows headphones when compatible Bluetooth headsets are connected (with a manual override)
+- Expandable Pomodoro timer: 25-minute focus and 5-minute break sessions
+- Clock, draggable window, and always-on-top toggle
 
-## Requirements
+## 🐱 Install Mochi on Windows (no coding required)
 
-On Windows install Node.js 20+, Rust with the MSVC toolchain, Visual Studio C++ Build Tools, and Microsoft Edge WebView2. Official guide: https://v2.tauri.app/start/prerequisites/
+**For anyone who just wants to use the app:**
 
-## Development
+1. Visit the [GitHub Releases page](https://github.com/RianaMalhotra/Mochi-s-Cozy-Corner/releases).
+2. Open the latest release and expand **Assets**.
+3. Download the Windows **`.msi` installer** (for example, a file ending in `_x64_en-US.msi`).
+4. Double-click the downloaded file and follow the Windows installation wizard.
+5. Find **Mochi's Cozy Corner** in the Windows **Start menu** and open it.
 
-~~~powershell
+**That's it!** You do **not** need to install Node.js, Rust, Git, VS Code, or run any terminal commands to use the installed app.
+
+> **Note:** The Releases page only offers a download once the maintainer has published a release and attached the MSI installer. If no MSI is listed, there is not yet a public installer to download. Windows may display a SmartScreen warning for an unsigned installer; verify the download came from this repository before deciding whether to proceed. The Microsoft Edge WebView2 runtime is required and is usually already installed on current Windows systems.
+
+### Start Mochi automatically when you sign in (optional)
+
+1. Press **Win + R**, type `shell:startup`, and press Enter.
+2. Open the Start menu, locate Mochi, and create a shortcut to the installed app.
+3. Put that shortcut in the Startup folder.
+
+Mochi will launch when you sign in to Windows. Remove the shortcut to disable automatic startup.
+
+## 🛠️ Development (contributors)
+
+Developers building Mochi from source on Windows need:
+
+- Node.js 20+ and npm
+- Rust with the MSVC toolchain
+- Visual Studio C++ Build Tools and Windows SDK
+- Microsoft Edge WebView2
+
+See the [official Tauri 2 Windows prerequisites](https://v2.tauri.app/start/prerequisites/).
+
+```powershell
 git clone https://github.com/RianaMalhotra/Mochi-s-Cozy-Corner.git
 cd Mochi-s-Cozy-Corner
 npm install
 npm run tauri dev
-~~~
+```
 
-For a browser-only UI preview (desktop window controls require Tauri):
+For a browser-only UI preview (native window and Windows Bluetooth/idle detection are unavailable):
 
-~~~powershell
+```powershell
 npm run dev
-~~~
+```
 
 Open http://127.0.0.1:1420.
 
-## Windows installer
+## 📦 Build and publish a Windows installer (maintainers)
 
-~~~powershell
+From a working Windows development environment:
+
+```powershell
+npm install
 npm run tauri build
-~~~
+```
 
-The NSIS/MSI installers appear under src-tauri/target/release/bundle/.
+After a successful build, the MSI installer is in:
+
+```text
+src-tauri/target/release/bundle/msi/
+```
+
+To make Mochi installable by other people:
+
+1. Go to the repository's [Releases page](https://github.com/RianaMalhotra/Mochi-s-Cozy-Corner/releases) and choose **Draft a new release**.
+2. Create a version tag, such as `v0.1.0`, and add release notes.
+3. Drag the generated **`.msi` file** into the release's **Assets** area.
+4. Publish the release.
+5. Test the public download link on another Windows PC.
+
+**Do not upload just the source-code ZIP:** users need the compiled MSI installer. Build again and publish a new installer when you want to distribute updated app code.
 
 ## Limitations
 
-- This MVP is a draggable *floating window*, not a cat that autonomously walks across other application windows.
-- The Pomodoro timer is not an OS background service; it pauses across application restarts.
-- The transparent window still reserves its rectangular hit-testing area.
-- Native Windows build verification is tracked by GitHub Actions.
-
-The source artwork is hand-written SVG and CSS; no external cat image is required.
+- Mochi is a floating window, not a cat that walks independently across other windows.
+- The Pomodoro timer does not keep running as a background service after the app closes.
+- Bluetooth headphone detection currently targets certain Windows Bluetooth headset/headphone device classes; some earbuds may not be recognized.
+- Windows native features are unavailable in the browser preview.
+- The artwork is hand-written SVG and CSS; no external cat image is required.
