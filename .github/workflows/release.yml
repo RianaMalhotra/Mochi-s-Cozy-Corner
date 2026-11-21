@@ -1,0 +1,49 @@
+name: Release Mochi (signed Windows updater)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Validate updater signing setup
+        shell: pwsh
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if (-not $env:TAURI_SIGNING_PRIVATE_KEY) { throw 'Set TAURI_SIGNING_PRIVATE_KEY in repository Actions secrets before releasing.' }
+          if (-not $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD) { throw 'Set TAURI_SIGNING_PRIVATE_KEY_PASSWORD in repository Actions secrets before releasing.' }
+          $config = Get-Content src-tauri/tauri.conf.json -Raw
+          if ($config.Contains('REPLACE_WITH_TAURI_UPDATER_PUBLIC_KEY')) { throw 'Replace the placeholder updater public key in src-tauri/tauri.conf.json before releasing.' }
+      - name: Install dependencies
+        run: npm install
+      - name: Build and publish signed Windows MSI update
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Mochi ${{ github.ref_name }}'
+          releaseBody: 'Signed Windows installer and automatic updater artifacts.'
+          releaseDraft: true
+          prerelease: false
+          updaterJsonPreferNsis: false
