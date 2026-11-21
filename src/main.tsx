@@ -77,6 +77,9 @@ function App() {
   const [sessions, setSessions] = useState(() => load('mochi-sessions', 0));
   const [clock, setClock] = useState(new Date());
   const [notice, setNotice] = useState('');
+  const [availableVersion, setAvailableVersion] = useState<string | null>(null);
+  const [installingUpdate, setInstallingUpdate] = useState(false);
+  const pendingUpdate = useRef<{ downloadAndInstall: () => Promise<void>; close: () => Promise<void> } | null>(null);
   const deadline = useRef<number | null>(null);
   const petTimeout = useRef<number | null>(null);
 
@@ -92,15 +95,8 @@ function App() {
         const update = await check();
         if (!update) return;
         if (cancelled) { await update.close(); return; }
-        const accepted = window.confirm(`Mochi ${update.version} is available! 🐱\n\nInstall the signed update and restart Mochi now?`);
-        if (accepted) {
-          setNotice('Downloading Mochi update…');
-          await update.downloadAndInstall();
-          const { relaunch } = await import('@tauri-apps/plugin-process');
-          await relaunch();
-        } else {
-          await update.close();
-        }
+        pendingUpdate.current = update;
+        setAvailableVersion(update.version);
       } catch (error) {
         console.warn('Mochi update check failed', error);
       }
@@ -108,6 +104,41 @@ function App() {
     void checkUpdates();
     return () => { cancelled = true; };
   }, []);
+
+  const dismissUpdate = async () => {
+    if (installingUpdate) return;
+    const update = pendingUpdate.current;
+    pendingUpdate.current = null;
+    setAvailableVersion(null);
+    if (update) {
+      try { await update.close(); } catch (error) { console.warn('Unable to close update', error); }
+    }
+  };
+
+  const installUpdate = async () => {
+    const update = pendingUpdate.current;
+    if (!update || installingUpdate) return;
+    setInstallingUpdate(true);
+    try {
+      await update.downloadAndInstall();
+      const { relaunch } = await import('@tauri-apps/plugin-process');
+      await relaunch();
+    } catch (error) {
+      console.error('Mochi update failed', error);
+      setNotice('Update failed. Please try again later.');
+      setInstallingUpdate(false);
+      await dismissFailedUpdate();
+    }
+  };
+
+  const dismissFailedUpdate = async () => {
+    const update = pendingUpdate.current;
+    pendingUpdate.current = null;
+    setAvailableVersion(null);
+    if (update) {
+      try { await update.close(); } catch { /* already closed */ }
+    }
+  };
 
   // Poll connected Bluetooth audio devices; no audio playback or default-device requirement.
   useEffect(() => {
@@ -331,6 +362,16 @@ function App() {
       <p>Mochi believes in you! ♡</p>
     </section>}
     {notice && <div className="toast" role="status">{notice}</div>}
+    {availableVersion && <section className="update-panel" role="dialog" aria-modal="true" aria-label="Mochi update available">
+      <span className="update-emoji" aria-hidden="true">🐱✨</span>
+      <strong>Mochi {availableVersion}!</strong>
+      <p>A cozy new update is ready. Install it and restart Mochi?</p>
+      <div className="update-actions">
+        <button type="button" disabled={installingUpdate} onClick={() => { void dismissUpdate(); }}>Later</button>
+        <button type="button" disabled={installingUpdate} onClick={() => { void installUpdate(); }}>{installingUpdate ? 'Updating…' : 'Update now'}</button>
+      </div>
+    </section>}
+
   </main>;
 }
 
