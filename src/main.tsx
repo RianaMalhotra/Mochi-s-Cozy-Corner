@@ -62,6 +62,12 @@ function App() {
   const [expanded, setExpanded] = useState(() => load('mochi-expanded', false));
   const [pinned, setPinned] = useState(true);
   const [petting, setPetting] = useState(false);
+  const [feeding, setFeeding] = useState(false);
+  const [carrotDrag, setCarrotDrag] = useState<{ x: number; y: number } | null>(null);
+  const [carrotsFed, setCarrotsFed] = useState(() => load('mochi-carrots-fed', 0));
+  const widgetRef = useRef<HTMLElement | null>(null);
+  const catRef = useRef<HTMLDivElement | null>(null);
+  const feedTimeout = useRef<number | null>(null);
   const [awake, setAwake] = useState(true);
   const [musicOverride, setMusicOverride] = useState(false);
   const [bluetoothHeadphones, setBluetoothHeadphones] = useState(false);
@@ -74,7 +80,7 @@ function App() {
   const deadline = useRef<number | null>(null);
   const petTimeout = useRef<number | null>(null);
 
-  const mood: Mood = petting ? 'happy' : running && mode === 'focus' ? 'focus' : !awake ? 'sleep' : 'idle';
+  const mood: Mood = petting || feeding ? 'happy' : running && mode === 'focus' ? 'focus' : !awake ? 'sleep' : 'idle';
 
   // Check signed GitHub releases on startup; never install without consent.
   useEffect(() => {
@@ -156,7 +162,8 @@ function App() {
     save('mochi-remaining', remaining);
     save('mochi-expanded', expanded);
     save('mochi-sessions', sessions);
-  }, [mode, remaining, expanded, sessions]);
+    save('mochi-carrots-fed', carrotsFed);
+  }, [mode, remaining, expanded, sessions, carrotsFed]);
 
   useEffect(() => {
     const id = window.setInterval(() => setClock(new Date()), 1000);
@@ -190,6 +197,7 @@ function App() {
 
   useEffect(() => () => {
     if (petTimeout.current !== null) clearTimeout(petTimeout.current);
+    if (feedTimeout.current !== null) clearTimeout(feedTimeout.current);
   }, []);
 
   const pet = () => {
@@ -198,6 +206,38 @@ function App() {
     setPetting(true);
     if (petTimeout.current !== null) clearTimeout(petTimeout.current);
     petTimeout.current = window.setTimeout(() => setPetting(false), 1300);
+  };
+
+  const carrotPosition = (e: React.PointerEvent) => {
+    const rect = widgetRef.current?.getBoundingClientRect();
+    return rect ? { x: e.clientX - rect.left, y: e.clientY - rect.top } : null;
+  };
+
+  const startCarrotDrag = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setCarrotDrag(carrotPosition(e));
+  };
+
+  const moveCarrot = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (carrotDrag !== null) setCarrotDrag(carrotPosition(e));
+  };
+
+  const dropCarrot = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (carrotDrag === null) return;
+    const bounds = catRef.current?.getBoundingClientRect();
+    const fed = !!bounds && e.clientX >= bounds.left + 35 && e.clientX <= bounds.right - 35
+      && e.clientY >= bounds.top + 30 && e.clientY <= bounds.bottom - 10;
+    setCarrotDrag(null);
+    if (!fed) return;
+    setCarrotsFed(n => n + 1);
+    setAwake(true);
+    setFeeding(true);
+    setNotice('nom nom! thank you for the carrot 🥕 ♡');
+    if (feedTimeout.current !== null) clearTimeout(feedTimeout.current);
+    feedTimeout.current = window.setTimeout(() => setFeeding(false), 1600);
   };
 
   const drag = async (e: React.PointerEvent) => {
@@ -245,7 +285,7 @@ function App() {
     setRemaining(DURATION[mode]);
   };
 
-  return <main className={`widget ${expanded ? "widget-expanded" : ""}`} onPointerDown={() => { lastInteraction.current = Date.now(); setAwake(true); }}>
+  return <main ref={widgetRef} className={`widget ${expanded ? "widget-expanded" : ""}`} onPointerDown={() => { lastInteraction.current = Date.now(); setAwake(true); }}>
     <div className="dragbar" onPointerDown={drag} title="Drag to move Mochi">
       <span className="brand">✿ mochi<span className="brand-heart">♡</span></span>
       <span className="drag-hint">⋮⋮ drag me</span>
@@ -258,7 +298,10 @@ function App() {
       <button onClick={close} title="Close Mochi" aria-label="Close Mochi"><X size={16} /></button>
     </div>
     <div className="stars" aria-hidden="true">✦ <span>·</span> ✧ <span>✦</span></div>
-    <div className="cat-wrap"><Cat mood={mood} onPet={pet} headphones={musicMode} /></div>
+    <div className={`cat-wrap ${carrotDrag ? "cat-feed-target" : ""} ${feeding ? "cat-eating" : ""}`} ref={catRef}><Cat mood={mood} onPet={pet} headphones={musicMode} /></div>
+    <button className="carrot-basket" aria-label="Drag carrot onto Mochi to feed" title="Drag a carrot onto Mochi!" onPointerDown={startCarrotDrag} onPointerMove={moveCarrot} onPointerUp={dropCarrot} onPointerCancel={() => setCarrotDrag(null)}>🥕</button>
+    {carrotDrag && <span className="carrot-floating" style={{ left: carrotDrag.x, top: carrotDrag.y }} aria-hidden="true">🥕</span>}
+    {feeding && <span className="nom-bubble" aria-hidden="true">nom nom ♡</span>}
     <div className="floor" aria-hidden="true" />
     <div className="status">
       <span className="status-dot" /> {mood === 'sleep' ? 'sleeping… zzz' : mood === 'focus' ? 'studying with you ♡' : mood === 'happy' ? 'purr purr ♡' : 'here to keep you company'}
