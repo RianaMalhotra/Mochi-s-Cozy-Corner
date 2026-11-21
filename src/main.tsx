@@ -92,7 +92,7 @@ function App() {
         const update = await check();
         if (!update) return;
         if (cancelled) { await update.close(); return; }
-        const accepted = window.confirm(`Mochi ${update.version} is available! 🐱\\n\\nInstall the signed update and restart Mochi now?`);
+        const accepted = window.confirm(`Mochi ${update.version} is available! 🐱\n\nInstall the signed update and restart Mochi now?`);
         if (accepted) {
           setNotice('Downloading Mochi update…');
           await update.downloadAndInstall();
