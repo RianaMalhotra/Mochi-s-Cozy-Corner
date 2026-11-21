@@ -1,6 +1,6 @@
 [package]
 name = "mochi_cozy_corner"
-version = "0.1.0"
+version = "0.2.0"
 description = "Mochi — an animated floating desktop cat"
 authors = ["Mochi contributors"]
 edition = "2021"
