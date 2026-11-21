@@ -35,7 +35,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "REPLACE_WITH_TAURI_UPDATER_PUBLIC_KEY",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIzOEM2MUI5RUM4NDlFRjgKUldUNG5vVHN1V0dNcy90bmkrQm9wNm12RzNkSVdCRHQ0V2YyYnRnRHFrQlVkMWQ5dmVzczdtcTEK",
       "endpoints": [
         "https://github.com/RianaMalhotra/Mochi-s-Cozy-Corner/releases/latest/download/latest.json"
       ],
