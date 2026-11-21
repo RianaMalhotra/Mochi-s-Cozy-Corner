@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getCurrentWindow, currentMonitor, PhysicalPosition, LogicalSize } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
-import { Clock3, Heart, Pause, Play, RotateCcw, Settings2, X, Pin, PinOff, Coffee, Music2, Moon } from 'lucide-react';
+import { Clock3, Heart, Pause, Play, RotateCcw, Settings2, X, Pin, PinOff, Coffee, Music2 } from 'lucide-react';
 import './style.css';
 
 type Mood = 'idle' | 'sleep' | 'happy' | 'focus';
