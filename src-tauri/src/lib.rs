@@ -107,6 +107,8 @@ fn bluetooth_headphones_connected() -> bool { false }
 pub fn run() {
     use tauri::{Manager, menu::{Menu, MenuItem}, tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState}};
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             let show = MenuItem::with_id(app, "show", "Show Mochi 🐱", true, None::<&str>)?;
             let hide = MenuItem::with_id(app, "hide", "Hide Mochi", true, None::<&str>)?;
