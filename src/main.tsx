@@ -63,7 +63,9 @@ function App() {
   const [pinned, setPinned] = useState(true);
   const [petting, setPetting] = useState(false);
   const [awake, setAwake] = useState(true);
-  const [musicMode, setMusicMode] = useState(() => load('mochi-music', false));
+  const [musicOverride, setMusicOverride] = useState(false);
+  const [bluetoothHeadphones, setBluetoothHeadphones] = useState(false);
+  const musicMode = bluetoothHeadphones || musicOverride;
 
   const lastInteraction = useRef(Date.now());
   const [sessions, setSessions] = useState(() => load('mochi-sessions', 0));
@@ -74,7 +76,20 @@ function App() {
 
   const mood: Mood = petting ? 'happy' : running && mode === 'focus' ? 'focus' : !awake ? 'sleep' : 'idle';
 
-  useEffect(() => { save('mochi-music', musicMode); }, [musicMode]);
+  // Poll connected Bluetooth audio devices; no audio playback or default-device requirement.
+  useEffect(() => {
+    if (!inTauri()) return;
+    let active = true;
+    const refresh = async () => {
+      try {
+        const connected = await invoke<boolean>('bluetooth_headphones_connected');
+        if (active) setBluetoothHeadphones(connected);
+      } catch (error) { console.warn('Bluetooth check failed', error); }
+    };
+    void refresh();
+    const id = window.setInterval(() => { void refresh(); }, 4000);
+    return () => { active = false; clearInterval(id); };
+  }, []);
 
   // Windows global idle time; fallback to interactions with the widget in browser preview.
   useEffect(() => {
@@ -224,7 +239,7 @@ function App() {
     <div className="bottom">
       <div className="clock"><Clock3 size={14} /><span>{clock.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
       <button className="focus-button" onClick={() => setExpanded(v => !v)}><Coffee size={15} /> focus timer <span>{expanded ? '⌄' : '⌃'}</span></button>
-      <button className={`music-button ${musicMode ? "active" : ""}`} onClick={() => setMusicMode(v => !v)} aria-label="Toggle music headphones" title="Music mode (manual toggle)"><Music2 size={15} /></button>
+      <button className={`music-button ${musicMode ? "active" : ""}`} onClick={() => setMusicOverride(v => !v)} aria-label="Toggle headphone override" title={bluetoothHeadphones ? "Bluetooth headphones connected" : "Toggle headphone override"}><Music2 size={15} /></button>
       <button className="heart-button" onClick={pet} aria-label="Pet Mochi"><Heart size={17} fill="#f3a7b8" /></button>
     </div>
     {expanded && <section className="timer" aria-label="Pomodoro timer">
