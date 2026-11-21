@@ -10,28 +10,37 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [{
-      "label": "main",
-      "title": "Mochi's Cozy Corner",
-      "width": 350,
-      "height": 440,
-      "minWidth": 350,
-      "minHeight": 440,
-      "maxWidth": 350,
-      "maxHeight": 440,
-      "transparent": true,
-      "decorations": false,
-      "alwaysOnTop": true,
-      "resizable": false,
-      "shadow": false,
-      "skipTaskbar": false,
-      "backgroundColor": "#00000000"
-    }],
-    "security": { "csp": null }
+    "windows": [
+      {
+        "label": "main",
+        "title": "Mochi's Cozy Corner",
+        "width": 350,
+        "height": 440,
+        "minWidth": 350,
+        "minHeight": 440,
+        "maxWidth": 350,
+        "maxHeight": 440,
+        "transparent": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "resizable": false,
+        "shadow": false,
+        "skipTaskbar": false,
+        "backgroundColor": "#00000000"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi"],
-    "icon": ["icons/icon.png", "icons/icon.ico"]
+    "targets": [
+      "msi"
+    ],
+    "icon": [
+      "icons/icon.png",
+      "icons/icon.ico"
+    ]
   }
 }
