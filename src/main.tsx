@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Clock3, Heart, Pause, Play, RotateCcw, Settings2, X, Pin, PinOff, Coffee } from 'lucide-react';
+import { getCurrentWindow, currentMonitor, PhysicalPosition, LogicalSize } from '@tauri-apps/api/window';
+import { invoke } from '@tauri-apps/api/core';
+import { Clock3, Heart, Pause, Play, RotateCcw, Settings2, X, Pin, PinOff, Coffee, Music2, Moon } from 'lucide-react';
 import './style.css';
 
 type Mood = 'idle' | 'sleep' | 'happy' | 'focus';
@@ -16,7 +17,7 @@ function load<T>(key: string, fallback: T): T {
 const formatted = (s: number) => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 const inTauri = () => '__TAURI_INTERNALS__' in window;
 
-function Cat({ mood, onPet }: { mood: Mood; onPet: () => void }) {
+function Cat({ mood, onPet, headphones }: { mood: Mood; onPet: () => void; headphones: boolean }) {
   return <button className={'cat cat-' + mood} aria-label="Pet Mochi" onClick={onPet} title="Pet Mochi!">
     <svg viewBox="0 0 260 225" role="img" aria-label="Animated cream cat with lavender headphones">
       <ellipse cx="132" cy="205" rx="93" ry="13" fill="#a88aaf" opacity=".22" />
@@ -41,11 +42,11 @@ function Cat({ mood, onPet }: { mood: Mood; onPet: () => void }) {
         <path d="M124 126q6-7 12 0l-6 5z" fill="#d993a1" />
         <path d="M130 131q-8 11-15 0m15 0q8 11 15 0" stroke="#9f7884" strokeWidth="2.5" fill="none" strokeLinecap="round" />
         <g stroke="#d9b8aa" strokeWidth="2" strokeLinecap="round"><path d="M75 133l-25-5m25 11l-23 5m133-11l25-5m-25 11l23 5" /></g>
-        <path d="M74 68q56-48 112 0" stroke="#a88ba7" strokeWidth="10" fill="none" strokeLinecap="round" />
+        {headphones && <g><path d="M74 68q56-48 112 0" stroke="#a88ba7" strokeWidth="10" fill="none" strokeLinecap="round" />
         <rect x="48" y="82" width="22" height="44" rx="11" fill="#b79bc4" />
         <rect x="190" y="82" width="22" height="44" rx="11" fill="#b79bc4" />
         <rect x="52" y="90" width="10" height="29" rx="5" fill="#e5cfe6" />
-        <rect x="198" y="90" width="10" height="29" rx="5" fill="#e5cfe6" />
+        <rect x="198" y="90" width="10" height="29" rx="5" fill="#e5cfe6" /></g>}
       </g>
       <g className="paw"><ellipse cx="103" cy="192" rx="21" ry="12" fill="#fff6e9" /><path d="M96 190v5m9-5v5" stroke="#d9b8aa" strokeWidth="2" /></g>
     </svg>
@@ -61,7 +62,10 @@ function App() {
   const [expanded, setExpanded] = useState(() => load('mochi-expanded', false));
   const [pinned, setPinned] = useState(true);
   const [petting, setPetting] = useState(false);
-  const [awake, setAwake] = useState(false);
+  const [awake, setAwake] = useState(true);
+  const [musicMode, setMusicMode] = useState(() => load('mochi-music', false));
+
+  const lastInteraction = useRef(Date.now());
   const [sessions, setSessions] = useState(() => load('mochi-sessions', 0));
   const [clock, setClock] = useState(new Date());
   const [notice, setNotice] = useState('');
@@ -69,6 +73,41 @@ function App() {
   const petTimeout = useRef<number | null>(null);
 
   const mood: Mood = petting ? 'happy' : running && mode === 'focus' ? 'focus' : !awake ? 'sleep' : 'idle';
+
+  useEffect(() => { save('mochi-music', musicMode); }, [musicMode]);
+
+  // Windows global idle time; fallback to interactions with the widget in browser preview.
+  useEffect(() => {
+    const check = async () => {
+      let idle = Math.floor((Date.now() - lastInteraction.current) / 1000);
+      if (inTauri()) {
+        try { idle = await invoke<number>('system_idle_seconds'); } catch { /* preview fallback */ }
+      }
+      if (!petting) setAwake(idle < 60);
+    };
+    void check();
+    const timer = window.setInterval(() => { void check(); }, 3000);
+    return () => clearInterval(timer);
+  }, [petting]);
+
+  // Dock to the bottom-right of the current display, preserving the bottom edge when expanded.
+  useEffect(() => {
+    if (!inTauri()) return;
+    const dock = async () => {
+      try {
+        const win = getCurrentWindow();
+        const monitor = await currentMonitor();
+        await win.setSize(new LogicalSize(220, expanded ? 405 : 255));
+        if (monitor) {
+          const scale = monitor.scaleFactor;
+          const width = Math.round(220 * scale);
+          const height = Math.round((expanded ? 405 : 255) * scale);
+          await win.setPosition(new PhysicalPosition(monitor.position.x + monitor.size.width - width - Math.round(16 * scale), monitor.position.y + monitor.size.height - height - Math.round(48 * scale)));
+        }
+      } catch (error) { console.warn('Unable to dock Mochi', error); }
+    };
+    void dock();
+  }, [expanded]);
 
   useEffect(() => {
     save('mochi-mode', mode);
@@ -112,6 +151,7 @@ function App() {
   }, []);
 
   const pet = () => {
+    lastInteraction.current = Date.now();
     setAwake(true);
     setPetting(true);
     if (petTimeout.current !== null) clearTimeout(petTimeout.current);
@@ -163,7 +203,7 @@ function App() {
     setRemaining(DURATION[mode]);
   };
 
-  return <main className="widget">
+  return <main className={`widget ${expanded ? "widget-expanded" : ""}`} onPointerDown={() => { lastInteraction.current = Date.now(); setAwake(true); }}>
     <div className="dragbar" onPointerDown={drag} title="Drag to move Mochi">
       <span className="brand">✿ mochi<span className="brand-heart">♡</span></span>
       <span className="drag-hint">⋮⋮ drag me</span>
@@ -176,14 +216,15 @@ function App() {
       <button onClick={close} title="Close Mochi" aria-label="Close Mochi"><X size={16} /></button>
     </div>
     <div className="stars" aria-hidden="true">✦ <span>·</span> ✧ <span>✦</span></div>
-    <div className="cat-wrap"><Cat mood={mood} onPet={pet} /></div>
+    <div className="cat-wrap"><Cat mood={mood} onPet={pet} headphones={musicMode} /></div>
     <div className="floor" aria-hidden="true" />
     <div className="status">
-      <span className="status-dot" /> {mood === 'sleep' ? 'dreaming of tuna…' : mood === 'focus' ? 'studying with you ♡' : mood === 'happy' ? 'purr purr ♡' : 'here to keep you company'}
+      <span className="status-dot" /> {mood === 'sleep' ? 'sleeping… zzz' : mood === 'focus' ? 'studying with you ♡' : mood === 'happy' ? 'purr purr ♡' : 'here to keep you company'}
     </div>
     <div className="bottom">
       <div className="clock"><Clock3 size={14} /><span>{clock.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
       <button className="focus-button" onClick={() => setExpanded(v => !v)}><Coffee size={15} /> focus timer <span>{expanded ? '⌄' : '⌃'}</span></button>
+      <button className={`music-button ${musicMode ? "active" : ""}`} onClick={() => setMusicMode(v => !v)} aria-label="Toggle music headphones" title="Music mode (manual toggle)"><Music2 size={15} /></button>
       <button className="heart-button" onClick={pet} aria-label="Pet Mochi"><Heart size={17} fill="#f3a7b8" /></button>
     </div>
     {expanded && <section className="timer" aria-label="Pomodoro timer">
