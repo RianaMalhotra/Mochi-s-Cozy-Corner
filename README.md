@@ -37,6 +37,24 @@ A tiny, animated **floating desktop cat for Windows**, built with **Tauri 2, Rea
 
 Mochi will launch when you sign in to Windows. Remove the shortcut to disable automatic startup.
 
+## 🖥️ System tray
+
+The desktop app includes a Windows notification-area icon. Right-click it for **Show Mochi**, **Hide Mochi**, and **Quit Mochi**. Left-click to show the pet again. This is especially useful because Mochi does not have a taskbar button.
+
+## 🔐 Automatic updates — release setup required
+
+The public MSI is **not automatically updated** when code is pushed to GitHub. Tauri's secure updater requires a dedicated signing key pair, an update endpoint, and signed update bundles. Do not put the private key or its password in the repository.
+
+To prepare a secure updater, follow the [Tauri 2 updater guide](https://v2.tauri.app/plugin/updater/):
+
+1. Generate an updater signing key pair on your own machine with `npm run tauri signer generate -- -w ~/.tauri/mochi.key` (see the Tauri guide for Windows path and command details).
+2. Keep the **private key** and password secret. The public key can be included in app configuration.
+3. Configure `tauri-plugin-updater` with the public key and a GitHub Releases endpoint.
+4. Build signed update bundles and publish the updater artifacts alongside each new GitHub Release.
+5. Enable periodic update checking and install/restart handling in the application.
+
+**Status:** The system tray is implemented. Automatic update installation is **not yet enabled** until the maintainer sets up signing and release artifacts. Users must manually install new MSI releases in the meantime.
+
 ## 🛠️ Development (contributors)
 
 Developers building Mochi from source on Windows need:
