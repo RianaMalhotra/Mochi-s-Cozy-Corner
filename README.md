@@ -2,6 +2,10 @@
 
 A tiny, animated **floating desktop cat for Windows**, built with **Tauri 2, React, TypeScript, and Rust**. Mochi keeps you company while you study, naps when you're away, and wears headphones when compatible Bluetooth headphones are connected.
 
+![Three illustrated Mochi moods: awake, wearing headphones, and sleeping](docs/mochi-preview.svg)
+
+*Meet Mochi: your cozy companion, with headphones and sleepy-time moods. Illustration based on the app's SVG cat artwork.*
+
 ## ✨ Features
 
 - Compact, transparent desktop companion that docks near the bottom-right corner
