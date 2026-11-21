@@ -105,7 +105,37 @@ fn bluetooth_headphones_connected() -> bool { false }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    use tauri::{Manager, menu::{Menu, MenuItem}, tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState}};
     tauri::Builder::default()
+        .setup(|app| {
+            let show = MenuItem::with_id(app, "show", "Show Mochi 🐱", true, None::<&str>)?;
+            let hide = MenuItem::with_id(app, "hide", "Hide Mochi", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "Quit Mochi", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show, &hide, &quit])?;
+            TrayIconBuilder::new()
+                .icon(app.default_window_icon().expect("Mochi app icon").clone())
+                .tooltip("Mochi's Cozy Corner")
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| {
+                    match event.id.as_ref() {
+                        "show" => { if let Some(win) = app.get_webview_window("main") { let _ = win.show(); let _ = win.set_focus(); } }
+                        "hide" => { if let Some(win) = app.get_webview_window("main") { let _ = win.hide(); } }
+                        "quit" => app.exit(0),
+                        _ => {}
+                    }
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
+                        if let Some(win) = tray.app_handle().get_webview_window("main") {
+                            let _ = win.show();
+                            let _ = win.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![system_idle_seconds, bluetooth_headphones_connected])
         .run(tauri::generate_context!())
         .expect("failed to run Mochi");
